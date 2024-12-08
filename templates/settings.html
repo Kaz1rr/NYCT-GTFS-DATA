@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', monospace;
+            background-color: #000000;
+            color: {{ settings.text_color }};
+            padding: 20px;
+            letter-spacing: 1px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 30px;
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        .settings-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 2px solid {{ settings.text_color }};
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }}, 
+                       inset 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+            border-radius: 10px;
+        }
+
+        .setting-group {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        input[type="color"],
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        input[type="color"] {
+            height: 50px;
+            padding: 0;
+            border: none;
+            background: none;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            border: 1px solid {{ settings.text_color }};
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 25px;
+            height: 25px;
+            background: {{ settings.text_color }};
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        .button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: none;
+            border: 2px solid {{ settings.text_color }};
+            color: {{ settings.text_color }};
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+        .styled-divider {
+        margin: 40px 0;
+        height: 2px;
+        background: linear-gradient(
+            to right,
+            transparent,
+            {{ settings.text_color }},
+            transparent
+        );
+        box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+    }
+
+        .button:hover {
+            background-color: {{ settings.text_color }};
+            color: #000000;
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        .buttons {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .preview {
+            margin-top: 20px;
+            padding: 20px;
+            border: 2px solid {{ settings.text_color }};
+            border-radius: 5px;
+            text-align: center;
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }}, 
+                       inset 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        #glow-value {
+            text-align: center;
+            margin-top: 10px;
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+    </style>
+</head>
+<body>
+    <h1>Settings</h1>
+
+    <div class="settings-container">
+        <form method="POST">
+            <div class="setting-group">
+                <label for="text_color">Border & Text Color:</label>
+                <input type="color" id="text_color" name="text_color" value="{{ settings.text_color }}">
+            </div>
+
+            <div class="setting-group">
+                <label for="glow_strength">Glow Strength:</label>
+                <input type="range" id="glow_strength" name="glow_strength" 
+                       min="0" max="30" value="{{ settings.glow_strength }}"
+                       oninput="updateGlowValue(this.value)">
+                <div id="glow-value">{{ settings.glow_strength }}px</div>
+            </div>
+
+            <div class="preview">
+                Preview Text
+            </div>
+
+            <div class="buttons">
+                <button type="submit" class="button">Save Settings</button>
+                <a href="{{ url_for('index') }}" class="button">Cancel</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        function updateGlowValue(value) {
+            document.getElementById('glow-value').textContent = value + 'px';
+            
+            // Update preview
+            const preview = document.querySelector('.preview');
+            const textColor = document.getElementById('text_color').value;
+            const glowEffect = `0 0 ${value}px ${textColor}`;
+            const boxShadow = `${glowEffect}, inset ${glowEffect}`;
+            
+            // Update all elements
+            document.body.style.color = textColor;
+            document.querySelector('h1').style.textShadow = glowEffect;
+            
+            document.querySelectorAll('.button').forEach(button => {
+                button.style.borderColor = textColor;
+                button.style.color = textColor;
+                button.style.textShadow = glowEffect;
+            });
+
+            document.querySelectorAll('label').forEach(label => {
+                label.style.textShadow = glowEffect;
+            });
+
+            document.querySelector('#glow-value').style.textShadow = glowEffect;
+            
+            // Update containers
+            document.querySelector('.settings-container').style.borderColor = textColor;
+            document.querySelector('.settings-container').style.boxShadow = boxShadow;
+            
+            preview.style.borderColor = textColor;
+            preview.style.color = textColor;
+            preview.style.boxShadow = boxShadow;
+            preview.style.textShadow = glowEffect;
+
+            // Update range input
+            const rangeInput = document.querySelector('input[type="range"]');
+            rangeInput.style.borderColor = textColor;
+            rangeInput.style.setProperty('--thumb-color', textColor);
+        }
+
+        // Add event listener for color changes
+        document.getElementById('text_color').addEventListener('input', function(e) {
+            updateGlowValue(document.getElementById('glow_strength').value);
+        });
+
+        // Initialize preview with current settings
+        window.onload = function() {
+            updateGlowValue(document.getElementById('glow_strength').value);
+        };
+    </script>
+</body>
+</html>

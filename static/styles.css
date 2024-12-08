@@ -1,0 +1,11 @@
+.transfer-image {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+.transfer-list li {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}

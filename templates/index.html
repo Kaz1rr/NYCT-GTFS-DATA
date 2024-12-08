@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NYC Subway Lines</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Press Start 2P', monospace;
+            color: {{ settings.text_color }};
+        }
+
+        .container {
+            border: 2px solid {{ settings.text_color }};
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }},
+                       inset 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        .train-grid {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .train-row {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+        }
+
+        .train-button {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .train-button img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        /* Train line colors */
+        .train-1, .train-2, .train-3 { color: #EE352E; }  /* Red */
+        .train-4, .train-5, .train-6 { color: #00933C; }  /* Green */
+        .train-7 { color: #B933AD; }  /* Purple */
+        .train-A, .train-C, .train-E { color: #2850AD; }  /* Blue */
+        .train-B, .train-D, .train-F, .train-M { color: #FF6319; }  /* Orange */
+        .train-N, .train-Q, .train-R, .train-W { color: #FCCC0A; }  /* Yellow */
+        .train-J, .train-Z { color: #996633; }  /* Brown */
+        .train-L, .train-S { color: #A7A9AC; }  /* Gray */
+        .train-G { color: #6CBE45; }  /* Light Green */
+
+        .shuttle-icon {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .shuttle-icon img {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px currentColor);
+        }
+
+        /* Train line colors */
+        .train-H { color: #A7A9AC; }  /* Gray */
+        .train-FS { color: #A7A9AC; }  /* Gray */
+        .train-GS { color: #A7A9AC; }  /* Gray */
+
+        .shuttle-section {
+            margin-top: 40px;
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .shuttle-row {
+            display: flex;
+            justify-content: center;
+            gap: 80px;
+        }
+
+        .shuttle-button {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            gap: 10px;
+        }
+
+        .shuttle-text {
+            color: {{ settings.text_color }};
+            font-size: 10px;
+            text-align: center;
+            text-transform: lowercase;
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+
+        .settings-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            text-decoration: none;
+        }
+
+        .settings-icon {
+            width: 40px;
+            height: 40px;
+            fill: {{ settings.text_color }};
+            filter: drop-shadow(0 0 {{ settings.glow_strength }}px {{ settings.text_color }});
+            transition: transform 0.3s ease;
+        }
+
+        .settings-icon:hover {
+            transform: rotate(90deg);
+        }
+
+        .shuttle-label {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: {{ settings.text_color }};
+            text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
+        }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('settings') }}" class="settings-link" title="Settings">
+        <svg class="settings-icon" viewBox="0 0 24 24">
+            <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+        </svg>
+    </a>
+    <div class="container">
+        <!-- Main Train Grid -->
+        <div class="train-grid">
+            <!-- 123 row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='1') }}" class="train-button train-1">
+                    <img src="{{ url_for('static', filename='images/1.svg') }}" alt="1">
+                </a>
+                <a href="{{ url_for('service', line='2') }}" class="train-button train-2">
+                    <img src="{{ url_for('static', filename='images/2.svg') }}" alt="2">
+                </a>
+                <a href="{{ url_for('service', line='3') }}" class="train-button train-3">
+                    <img src="{{ url_for('static', filename='images/3.svg') }}" alt="3">
+                </a>
+            </div>
+
+            <!-- 456 row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='4') }}" class="train-button train-4">
+                    <img src="{{ url_for('static', filename='images/4.svg') }}" alt="4">
+                </a>
+                <a href="{{ url_for('service', line='5') }}" class="train-button train-5">
+                    <img src="{{ url_for('static', filename='images/5.svg') }}" alt="5">
+                </a>
+                <a href="{{ url_for('service', line='6') }}" class="train-button train-6">
+                    <img src="{{ url_for('static', filename='images/6.svg') }}" alt="6">
+                </a>
+            </div>
+
+            <!-- 7GL row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='7') }}" class="train-button train-7">
+                    <img src="{{ url_for('static', filename='images/7.svg') }}" alt="7">
+                </a>
+                <a href="{{ url_for('service', line='G') }}" class="train-button train-G">
+                    <img src="{{ url_for('static', filename='images/g.svg') }}" alt="G">
+                </a>
+                <a href="{{ url_for('service', line='L') }}" class="train-button train-L">
+                    <img src="{{ url_for('static', filename='images/l.svg') }}" alt="L">
+                </a>
+            </div>
+
+            <!-- ACE row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='A') }}" class="train-button train-A">
+                    <img src="{{ url_for('static', filename='images/a.svg') }}" alt="A">
+                </a>
+                <a href="{{ url_for('service', line='C') }}" class="train-button train-C">
+                    <img src="{{ url_for('static', filename='images/c.svg') }}" alt="C">
+                </a>
+                <a href="{{ url_for('service', line='E') }}" class="train-button train-E">
+                    <img src="{{ url_for('static', filename='images/e.svg') }}" alt="E">
+                </a>
+            </div>
+
+            <!-- BDFM row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='B') }}" class="train-button train-B">
+                    <img src="{{ url_for('static', filename='images/b.svg') }}" alt="B">
+                </a>
+                <a href="{{ url_for('service', line='D') }}" class="train-button train-D">
+                    <img src="{{ url_for('static', filename='images/d.svg') }}" alt="D">
+                </a>
+                <a href="{{ url_for('service', line='F') }}" class="train-button train-F">
+                    <img src="{{ url_for('static', filename='images/f.svg') }}" alt="F">
+                </a>
+                <a href="{{ url_for('service', line='M') }}" class="train-button train-M">
+                    <img src="{{ url_for('static', filename='images/m.svg') }}" alt="M">
+                </a>
+            </div>
+
+            <!-- NQRW row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='N') }}" class="train-button train-N">
+                    <img src="{{ url_for('static', filename='images/n.svg') }}" alt="N">
+                </a>
+                <a href="{{ url_for('service', line='Q') }}" class="train-button train-Q">
+                    <img src="{{ url_for('static', filename='images/q.svg') }}" alt="Q">
+                </a>
+                <a href="{{ url_for('service', line='R') }}" class="train-button train-R">
+                    <img src="{{ url_for('static', filename='images/r.svg') }}" alt="R">
+                </a>
+                <a href="{{ url_for('service', line='W') }}" class="train-button train-W">
+                    <img src="{{ url_for('static', filename='images/w.svg') }}" alt="W">
+                </a>
+            </div>
+
+            <!-- JZ SIR row -->
+            <div class="train-row">
+                <a href="{{ url_for('service', line='J') }}" class="train-button train-J">
+                    <img src="{{ url_for('static', filename='images/j.svg') }}" alt="J">
+                </a>
+                <a href="{{ url_for('service', line='Z') }}" class="train-button train-Z">
+                    <img src="{{ url_for('static', filename='images/z.svg') }}" alt="Z">
+                </a>
+                <a href="{{ url_for('service', line='SIR') }}" class="train-button train-S">
+                    <img src="{{ url_for('static', filename='images/sir.svg') }}" alt="SIR">
+                </a>
+            </div>
+        </div>
+
+
+        <div class="styled-divider"></div>
+
+
+
+
+
+        <!-- Shuttle Services -->
+        <div class="shuttle-section">
+            <div class="shuttle-row">
+                <a href="{{ url_for('service', line='H') }}" class="shuttle-button">
+                    <div class="shuttle-icon train-H">
+                        <img src="{{ url_for('static', filename='images/h.svg') }}" alt="Rockaway Shuttle">
+                    </div>
+                    <div class="shuttle-text">rockaway<br>shuttle</div>
+                </a>
+                <a href="{{ url_for('service', line='FS') }}" class="shuttle-button">
+                    <div class="shuttle-icon train-FS">
+                        <img src="{{ url_for('static', filename='images/fs.svg') }}" alt="Franklin Avenue Shuttle">
+                    </div>
+                    <div class="shuttle-text">franklin av<br>shuttle</div>
+                </a>
+                <a href="{{ url_for('service', line='GS') }}" class="shuttle-button">
+                    <div class="shuttle-icon train-GS">
+                        <img src="{{ url_for('static', filename='images/gs.svg') }}" alt="42nd Street Shuttle">
+                    </div>
+                    <div class="shuttle-text">42nd street<br>shuttle</div>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

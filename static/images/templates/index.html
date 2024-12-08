@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Train Info</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Press Start 2P', sans-serif;
+            background-color: #121212;
+            color: #D3D3D3;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #A9A9A9;
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+
+        .train-info, .transfers-info {
+            margin-top: 20px;
+        }
+
+        .train-info h2, .transfers-info h2 {
+            color: #C0C0C0;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .train, .transfer {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            margin: 0 auto 15px auto;
+            max-width: 80%;
+            padding: 10px;
+            background-color: #1E1E1E;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+
+        .train-image {
+            width: 60px;
+            height: 60px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .train-details, .transfer-details {
+            font-size: 0.8em;
+            color: #BBBBBB;
+            margin: 0;
+        }
+
+        .blinking {
+            animation: blink-animation 1s infinite;
+        }
+
+        @keyframes blink-animation {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 1em;
+            margin-top: 20px;
+            width: 50%;
+            font-family: 'Press Start 2P', sans-serif;
+            border: 1px solid #444;
+            background-color: #1A1A1A;
+            color: #D3D3D3;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #333;
+            border: none;
+            font-size: 1em;
+            font-family: 'Press Start 2P', sans-serif;
+            color: #D3D3D3;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #444;
+            color: #FFFFFF;
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.8em;
+            color: #555;
+        }
+
+        .transfer {
+            flex-direction: column;
+            align-items: flex-start;
+            max-width: 85%; /* Max width for transfers */
+            margin: 0 auto;
+            padding: 15px;
+            background-color: #1E1E1E;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+
+        .transfer p {
+            margin: 5px 0;
+            font-size: 0.9em; /* Increase font size for better readability */
+            color: #BBBBBB;
+        }
+
+        .transfer-image {
+            width: 30px;
+            height: 30px;
+            margin-right: 10px;
+        }
+
+        .transfer-info {
+            display: flex;
+            flex-direction: row; /* Side by side layout */
+            justify-content: space-between; /* Space between the "From" and "To" station */
+            align-items: center;
+            width: 100%; /* Ensures transfer info takes full width */
+        }
+
+        .transfer-info div {
+            flex-basis: 48%; /* Allow some space between the "From" and "To" section */
+        }
+
+        .transfer-info div a {
+            color: #00BFFF;
+            text-decoration: none;
+        }
+
+    </style>
+    <script>
+        function refreshPage() {
+            setTimeout(() => {
+                location.reload();
+            }, 5000);
+        }
+
+        window.onload = refreshPage;
+    </script>
+</head>
+<body>
+    <h1>MTA Subway Info</h1>
+    <form method="POST" action="/search">
+        <input type="text" name="parent_station" placeholder="Enter Parent Station ID" required>
+        <input type="submit" value="Get Train Info">
+    </form>
+
+    {% if stop_name %}
+    <div class="train-info">
+        <h2>Upcoming trains for {{ stop_name }}:</h2>
+        {% if train_info %}
+            {% for train in train_info %}
+            <div class="train {% if train.departure_in_minutes < 1 %}blinking{% endif %}">
+                <img src="{{ url_for('static', filename='images/' + train.route_name|lower + '.svg') }}" alt="Line {{ train.route_name|upper }}" class="train-image">
+                <p class="train-details">
+                    to {{ train.destination }} [{{ train.headsign }}] leaves in 
+                    {% if train.departure_in_minutes < 1 %}
+                        NOW
+                    {% else %}
+                        {{ train.departure_in_minutes }} min
+                    {% endif %}
+                </p>
+                <p class="next-stop">
+                    <!-- Next Stop: {{ train.next_stop }} -->
+                </p>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p>No upcoming trains available.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if transfers %}
+    <div class="transfers-info">
+        <h2>Available Transfers:</h2>
+        {% for transfer in transfers %}
+        <div class="transfer">
+            <div class="transfer-info">
+                <div>
+                    <!-- Use the full from_stop_id for the image -->
+                    <img src="{{ url_for('static', filename='images/' + transfer.from_stop_id[0]|lower + '.svg') }}" alt="Transfer Image" class="transfer-image">
+                    <p>From: <a href="/traininfo/{{ transfer.from_stop_id }}">{{ transfer.from_stop_name }}</a> ({{ transfer.from_stop_id }})</p>
+                </div>
+                <div>
+                    <!-- Use the full to_stop_id for the image -->
+                    <img src="{{ url_for('static', filename='images/' + transfer.to_stop_id[0]|lower + '.svg') }}" alt="Transfer Image" class="transfer-image">
+                    <p>To: <a href="/traininfo/{{ transfer.to_stop_id }}">{{ transfer.to_stop_name }}</a> ({{ transfer.to_stop_id }})</p>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="footer">Powered by Transiter API</div>
+</body>
+</html>
