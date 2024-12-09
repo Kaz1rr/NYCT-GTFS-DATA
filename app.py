@@ -252,7 +252,11 @@ def map_stops_to_trunk_lines():
         'Lexington Avenue Line': ['4', '5', '6'],
         'Flushing Line': ['7'],
         'Second Avenue Line': ['T'],
+        '42nd Street Shuttle': ['GS'],
+        'Franklin Avenue Shuttle': ['FS'],
+        'Rockaway Park Shuttle': ['H'],
         'Shuttles': ['S'],
+        'Staten Island Railway': ['SIR'],
     }
     
     # Define trunk line colors
@@ -267,7 +271,11 @@ def map_stops_to_trunk_lines():
         'Lexington Avenue Line': '#00933c',   # Green
         'Flushing Line': '#b933ad',          # Purple
         'Second Avenue Line': '#00add0',      # Turquoise
-        'Shuttles': '#808183'                 # Dark slate gray
+        '42nd Street Shuttle': '#808183',     # Dark slate gray
+        'Franklin Avenue Shuttle': '#808183', # Dark slate gray
+        'Rockaway Park Shuttle': '#808183',   # Dark slate gray
+        'Shuttles': '#808183',                # Dark slate gray
+        'Staten Island Railway': '#808183',   # Dark slate gray
     }
     
     # Create reverse mapping from service to trunk line
@@ -311,18 +319,38 @@ def map_stops_to_trunk_lines():
     
     return stop_to_trunk, trunk_to_stops, trunk_line_colors
 
+def get_stops_for_trunk_line(trunk_line):
+    """Map trunk lines to their specific stop IDs."""
+    trunk_line_stops = {
+        'Staten Island Railway': ['S09', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 
+                                'S21', 'S22', 'S23', 'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'],
+        'Franklin Avenue Shuttle': ['D26', 'S01', 'S03', 'S04'],
+        '42nd Street Shuttle': ['901', '902'],
+        'Rockaway Park Shuttle': ['H01', 'H02', 'H03', 'H04', 'H06', 'H07', 'H08', 'H09', 'H10', 'H11', 
+                                'H12', 'H13', 'H14', 'H15']
+    }
+    return trunk_line_stops.get(trunk_line, [])
+
+def get_stop_info(stop_id):
+    """Get stop name from stops.txt"""
+    with open('stops.txt', 'r', encoding='utf-8') as file:
+        reader = csv.DictReader(file)
+        for row in reader:
+            if row['stop_id'] == stop_id:
+                return {
+                    'stop_id': stop_id,
+                    'stop_name': row['stop_name']
+                }
+    return None
+
 @app.route('/')
 def index():
     valid_lines = ['1', '2', '3', '4', '5', '6', '7', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'L', 'M', 'N', 'Q', 'R', 'S', 'T', "H", "W", "9", "FS", "GS", "SIR"]
     settings = session.get('settings', DEFAULT_SETTINGS)
     return render_template('index.html', services=valid_lines, settings=settings)
 
-@app.route('/service/<line>')
-def service(line):
-    # Get trunk line mappings
-    stop_to_trunk, trunk_to_stops, trunk_line_colors = map_stops_to_trunk_lines()
-    
-    # Get the trunk line for this service
+@app.route('/service/<service>')
+def service(service):
     trunk_lines = {
         'Eighth Avenue Line': ['A', 'C', 'E'],
         'Sixth Avenue Line': ['B', 'D', 'F', 'M'],
@@ -334,21 +362,41 @@ def service(line):
         'Lexington Avenue Line': ['4', '5', '6'],
         'Flushing Line': ['7'],
         'Second Avenue Line': ['T'],
-        'Shuttles': ['S'],
         '42nd Street Shuttle': ['GS'],
         'Franklin Avenue Shuttle': ['FS'],
         'Rockaway Park Shuttle': ['H'],
+        'Staten Island Railway': ['SIR']
     }
     
     current_trunk = None
     for trunk, services in trunk_lines.items():
-        if line in services:
+        if service in services:
             current_trunk = trunk
             break
-    
+            
     if current_trunk is None:
-        return "Invalid line", 404
+        return "Invalid line"
         
+    # Get stops for special trunk lines (shuttles and SIR)
+    stops = get_stops_for_trunk_line(current_trunk)
+    if stops:
+        # Get stop names for each stop ID
+        stop_info = []
+        for stop_id in stops:
+            info = get_stop_info(stop_id)
+            if info:
+                stop_info.append(info)
+        
+        return render_template('service.html', 
+                             service=service,
+                             trunk_line=current_trunk,
+                             stops=stop_info,
+                             settings=session.get('settings', DEFAULT_SETTINGS))
+                             
+    # For regular trunk lines, continue with existing logic...
+    # Get trunk line mappings
+    stop_to_trunk, trunk_to_stops, trunk_line_colors = map_stops_to_trunk_lines()
+    
     # Get all stops for this trunk line
     trunk_groups = {}
     if current_trunk in trunk_to_stops:
@@ -358,7 +406,7 @@ def service(line):
     settings = session.get('settings', DEFAULT_SETTINGS)
     
     return render_template('service.html', 
-                         line=line,
+                         line=service,
                          trunk_groups=trunk_groups,
                          trunk_line_colors=trunk_line_colors,
                          settings=settings)

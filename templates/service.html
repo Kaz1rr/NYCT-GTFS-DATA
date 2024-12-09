@@ -110,7 +110,18 @@
     <a href="{{ url_for('index') }}" class="back-link">← Back to All Services</a>
 
     <div class="station-list">
-        {% if trunk_groups %}
+        {% if stops %}
+            {% for stop in stops %}
+            <a href="{{ url_for('train_info', stop_id=stop.stop_id) }}" class="station-row">
+                <div class="station-info">
+                    <img src="{{ url_for('static', filename='images/' + service|lower + '.svg') }}" 
+                         alt="{{ service }} Train" 
+                         class="train-image">
+                    <span class="station-name">{{ stop.stop_name }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        {% elif trunk_groups %}
             {% for trunk, stops in trunk_groups.items() %}
             <div class="trunk-line">
                 <h3>{{ trunk }}</h3>
