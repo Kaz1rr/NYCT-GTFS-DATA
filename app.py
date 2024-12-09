@@ -4,6 +4,8 @@ import requests
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from flask_session import Session
 from datetime import datetime
+from collections import defaultdict
+from dateutil import parser
 
 app = Flask(__name__, template_folder="templates")
 app.secret_key = 'your-secret-key-here'
@@ -17,9 +19,11 @@ DEFAULT_SETTINGS = {
     'glow_strength': '15'
 }
 
+TRANSITER_BASE_URL = "https://demo.transiter.dev"
+
 def get_line_name(stop_id):
     route_id = stop_id[0]
-    base_url = f"https://demo.transiter.dev/systems/us-ny-subway/routes/{route_id}"
+    base_url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/routes/{route_id}"
 
     try:
         response = requests.get(base_url)
@@ -70,37 +74,40 @@ def parse_stops(file_path, specific_line_stops=None):
     return lines_stations
 
 def get_upcoming_trains_for_stop(stop_id, lines_stations):
-    # For a given stop_id, we'll check both N and S directions
+    """Get upcoming train arrivals for a specific stop."""
     stop_ids = [stop_id]
     
     if stop_id[-1] not in ['N', 'S']:
         stop_ids.extend([f"{stop_id}N", f"{stop_id}S"])
-
+    
     all_train_info = []
     seen_trains = set()
     
     for current_stop_id in stop_ids:
-        url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{current_stop_id}"
+        url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{current_stop_id}"
         try:
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
-        except (requests.exceptions.RequestException, KeyError, IndexError) as e:
+        except Exception as e:
             print(f"Error fetching data for stop {current_stop_id}: {e}")
             continue
 
         now = time.time()
-        upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) if int(stop_time["departure"].get("time", 0)) > now]
+        upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) 
+                         if int(stop_time["departure"].get("time", 0)) > now][:2]  # Limit to 8 trains per direction
 
-        for stop_time in upcoming_trains[:2]:  # Limit to the next 2 trains
+        for stop_time in upcoming_trains:
             departure_time = stop_time.get("departure", {}).get("time", None)
 
             if departure_time is None:
-                print(f"Skipping train info due to missing departure time for stop {current_stop_id}")
                 continue
 
             seconds_to_leave = int(departure_time) - now
-            minutes, _ = divmod(seconds_to_leave, 60)
+            minutes = int(seconds_to_leave / 60)
+            
+            if minutes < -1:  # Skip trains that left more than a minute ago
+                continue
 
             trip_info = stop_time.get("trip", {})
             route_id = trip_info.get("route", {}).get("id", "Unknown")
@@ -110,29 +117,26 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
             trip_id = trip_info.get("id", "Unknown")
 
             if destination == "Unknown":
-                destination = "No destination available"
+                continue
             if route_name == "Unknown Line":
-                route_name = "No route available"
+                continue
 
-            train_details = f"to {destination} [{headsign}] leaves in {int(minutes)} min"
-
-            if train_details not in seen_trains:
-                seen_trains.add(train_details)
+            train_key = f"{route_name}-{destination}-{departure_time}"
+            if train_key not in seen_trains:
+                seen_trains.add(train_key)
                 train_info = {
-                    "train_details": train_details,
-                    "trip_id": trip_id,
+                    "route_name": route_name,
                     "destination": destination,
                     "headsign": headsign,
-                    "departure_time": departure_time,
-                    "departure_in_minutes": int(minutes),
-                    "route_name": route_name
+                    "departure_in_minutes": max(0, minutes)
                 }
                 all_train_info.append(train_info)
     
-    return all_train_info
+    # Sort by departure time and limit to 8 trains total
+    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:4]
 
 def get_stop_name(stop_id):
-    url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{stop_id}"
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -143,7 +147,7 @@ def get_stop_name(stop_id):
         return "Unknown Station"
 
 def get_transfers_for_stop(stop_id):
-    url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{stop_id}"
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -187,7 +191,7 @@ def get_transfers_for_stop(stop_id):
         return []
 
 def get_route_for_stop(stop_id):
-    url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{stop_id}"
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -199,7 +203,7 @@ def get_route_for_stop(stop_id):
         return "Unknown Route"
 
 def get_headways_for_stop(stop_id):
-    url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{stop_id}/realtime"
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}/realtime"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -237,6 +241,21 @@ def map_stops_to_trunk_lines():
         'Shuttles': ['S'],
     }
     
+    # Define trunk line colors
+    trunk_line_colors = {
+        'Eighth Avenue Line': '#0039e6',      # Blue
+        'Sixth Avenue Line': '#ff6319',       # Orange
+        'Crosstown Line': '#6cbe45',          # Lime
+        'Canarsie Line': '#a7a9ac',          # Light slate gray
+        'Nassau Street Line': '#996633',      # Brown
+        'Broadway Line': '#fccc0a',           # Yellow
+        'Broadway–Seventh Avenue Line': '#ee352e',  # Red
+        'Lexington Avenue Line': '#00933c',   # Green
+        'Flushing Line': '#b933ad',          # Purple
+        'Second Avenue Line': '#00add0',      # Turquoise
+        'Shuttles': '#808183'                 # Dark slate gray
+    }
+    
     # Create reverse mapping from service to trunk line
     service_to_trunk = {}
     for trunk, services in trunk_lines.items():
@@ -251,6 +270,7 @@ def map_stops_to_trunk_lines():
         for row in reader:
             stop_id = row['stop_id']
             stop_name = row['stop_name']
+            location_type = row.get('location_type', '')
             
             # Skip if it's a child station (ends with N or S)
             if stop_id[-1] in ['N', 'S']:
@@ -275,7 +295,7 @@ def map_stops_to_trunk_lines():
                     'service': service
                 })
     
-    return stop_to_trunk, trunk_to_stops
+    return stop_to_trunk, trunk_to_stops, trunk_line_colors
 
 @app.route('/')
 def index():
@@ -286,7 +306,7 @@ def index():
 @app.route('/service/<line>')
 def service(line):
     # Get trunk line mappings
-    stop_to_trunk, trunk_to_stops = map_stops_to_trunk_lines()
+    stop_to_trunk, trunk_to_stops, trunk_line_colors = map_stops_to_trunk_lines()
     
     # Get the trunk line for this service
     trunk_lines = {
@@ -301,6 +321,9 @@ def service(line):
         'Flushing Line': ['7'],
         'Second Avenue Line': ['T'],
         'Shuttles': ['S'],
+        '42nd Street Shuttle': ['GS'],
+        'Franklin Avenue Shuttle': ['FS'],
+        'Rockaway Park Shuttle': ['H'],
     }
     
     current_trunk = None
@@ -323,6 +346,7 @@ def service(line):
     return render_template('service.html', 
                          line=line,
                          trunk_groups=trunk_groups,
+                         trunk_line_colors=trunk_line_colors,
                          settings=settings)
 
 @app.route('/traininfo/<stop_id>')
@@ -331,10 +355,16 @@ def train_info(stop_id):
     if not stop_name:
         return "Stop not found", 404
 
-    lines_stations = parse_stops(r"stops.txt")
+    lines_stations = parse_stops('stops.txt')
     train_info = get_upcoming_trains_for_stop(stop_id, lines_stations)
     transfers = get_transfers_for_stop(stop_id)
-
+    
+    # Get trunk line info for this stop
+    stop_to_trunk, trunk_to_stops, trunk_line_colors = map_stops_to_trunk_lines()
+    trunk_line = None
+    if stop_id in stop_to_trunk:
+        trunk_line = stop_to_trunk[stop_id]
+    
     # Get the user's settings or use defaults
     settings = session.get('settings', {
         'text_color': '#39FF14',
@@ -345,6 +375,8 @@ def train_info(stop_id):
                          stop_name=stop_name,
                          train_info=train_info,
                          transfers=transfers,
+                         trunk_line=trunk_line,
+                         trunk_line_colors=trunk_line_colors,
                          settings=settings)
 
 @app.route('/get_stops/<service>', methods=['GET'])
@@ -409,7 +441,7 @@ def settings():
 
 @app.route('/stop/<stop_id>')
 def stop(stop_id):
-    url = f"https://demo.transiter.dev/systems/us-ny-subway/stops/{stop_id}"
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -426,8 +458,8 @@ def stop(stop_id):
         # Calculate arrival times
         current_time = time.time()
         for info in train_info:
-            if info['departure_time'] is not None:
-                arrival_time_sec = int(info['departure_time']) - current_time
+            if info['departure_in_minutes'] is not None:
+                arrival_time_sec = info['departure_in_minutes'] * 60
                 info['arrival_time'] = max(1, int(arrival_time_sec / 60)) if arrival_time_sec > 0 else None
             else:
                 info['arrival_time'] = None
