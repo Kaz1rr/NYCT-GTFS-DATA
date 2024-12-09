@@ -10,7 +10,7 @@
         body {
             font-family: 'Press Start 2P', monospace;
             background-color: #000000;
-            color: {{ text_color }};
+            color: {{ trunk_color }};
             padding: 20px;
             letter-spacing: 1px;
         }
@@ -19,11 +19,11 @@
             text-align: center;
             font-size: 24px;
             margin-bottom: 30px;
-            text-shadow: 0 0 {{ glow_strength }}px {{ text_color }};
+            text-shadow: 0 0 {{ glow_strength }}px {{ trunk_color }};
         }
 
         .back-link {
-            color: {{ text_color }};
+            color: {{ trunk_color }};
             text-decoration: none;
             display: block;
             margin-bottom: 20px;
@@ -38,8 +38,8 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            border: 2px solid {{ text_color }};
-            box-shadow: 0 0 {{ glow_strength }}px {{ text_color }}, inset 0 0 {{ glow_strength }}px {{ text_color }};
+            border: 2px solid {{ trunk_color }};
+            box-shadow: 0 0 {{ glow_strength }}px {{ trunk_color }}, inset 0 0 {{ glow_strength }}px {{ trunk_color }};
             border-radius: 10px;
         }
 
@@ -48,15 +48,15 @@
             padding: 15px;
             margin-bottom: 10px;
             text-decoration: none;
-            color: {{ text_color }};
-            border: 1px solid {{ text_color }};
+            color: {{ trunk_color }};
+            border: 1px solid {{ trunk_color }};
             border-radius: 5px;
             transition: all 0.3s ease;
         }
 
         .station-row:hover {
             background-color: rgba(255, 255, 255, 0.1);
-            box-shadow: 0 0 {{ glow_strength }}px {{ text_color }};
+            box-shadow: 0 0 {{ glow_strength }}px {{ trunk_color }};
         }
 
         .station-info {

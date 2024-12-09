@@ -95,7 +95,7 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
 
         now = time.time()
         upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) 
-                         if float(stop_time["departure"].get("time", 0)) > (now - 60)][:5]  # Allow slightly past trains and show more per direction
+                         if float(stop_time["departure"].get("time", 0)) > (now - 60)][:4]  # Allow slightly past trains and show more per direction
 
         for stop_time in upcoming_trains:
             departure_time = stop_time.get("departure", {}).get("time", None)
@@ -131,7 +131,7 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
                 all_train_info.append(train_info)
     
     # Sort by departure time and show more trains
-    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:5]
+    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:4]
 
 def get_stop_name(stop_id):
     url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
@@ -255,7 +255,6 @@ def map_stops_to_trunk_lines():
         '42nd Street Shuttle': ['GS'],
         'Franklin Avenue Shuttle': ['FS'],
         'Rockaway Park Shuttle': ['H'],
-        'Shuttles': ['S'],
         'Staten Island Railway': ['SIR'],
     }
     
@@ -275,7 +274,7 @@ def map_stops_to_trunk_lines():
         'Franklin Avenue Shuttle': '#808183', # Dark slate gray
         'Rockaway Park Shuttle': '#808183',   # Dark slate gray
         'Shuttles': '#808183',                # Dark slate gray
-        'Staten Island Railway': '#808183',   # Dark slate gray
+        'Staten Island Railway': '##0078C6', 
     }
     
     # Create reverse mapping from service to trunk line
@@ -319,17 +318,66 @@ def map_stops_to_trunk_lines():
     
     return stop_to_trunk, trunk_to_stops, trunk_line_colors
 
-def get_stops_for_trunk_line(trunk_line):
-    """Map trunk lines to their specific stop IDs."""
+def get_stops_for_trunk_line(trunk_line, service):
+    """Map trunk lines and services to their specific stop IDs."""
     trunk_line_stops = {
-        'Staten Island Railway': ['S09', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 
-                                'S21', 'S22', 'S23', 'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31'],
-        'Franklin Avenue Shuttle': ['D26', 'S01', 'S03', 'S04'],
-        '42nd Street Shuttle': ['901', '902'],
-        'Rockaway Park Shuttle': ['H01', 'H02', 'H03', 'H04', 'H06', 'H07', 'H08', 'H09', 'H10', 'H11', 
-                                'H12', 'H13', 'H14', 'H15']
+        'Eighth Avenue Line': {
+            'A': ["A02", "A03", "A05", "A06", "A07", "A09", "A10", "A11", "A12", "A14", "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A24", "A25", "A27", "A28", "A30", "A31", "A32", "A33", "A34", "A36", "A38", "A40", "A41", "A42", "A43", "A44", "A45", "A46", "A47", "A48", "A49", "A50", "A51", "A52", "A53", "A54", "A55", "A57", "A59", "A60", "A61", "A63", "A64", "A65", "H01", "H02", "H03", "H04", "H06", "H07", "H08", "H09", "H10", "H11", "H12"],
+            'C': ['A09', "A10", "A11", "A12", "A14", "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A24", "A25", "A27", "A28", "A30", "A31", "A32", "A33", "A34", "A36", "A38", "A40", "A41", "A42", "A43", "A44", "A45", "A46", "A47", "A48", "A49", "A50", "A51", "A52", "A53", "A54", "A55", "A57", "A59", "A60", "A61", "A63", "A64", "A65", "H01", "H02", "H03", "H04", "H06", "H07", "H08", "H09", "H10", "H11", "H12"],
+            'E': ["G05", "G06", "G07", "F05", "F06", "F07", "G08", "G09", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G18", "G19", "G20", "G21", "F09", "F11", "F12", "D14", "A25", "A27", "A28", "A30", "A31", "A32", "A33", "A34", "E01",]
+        },
+        'Sixth Avenue Line': {
+            'B': ["D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13", "A14", "A15", "A16", "A17", "A18", "A19", "A20", "A21", "A22", "A24", "D14", "D15", "D16", "D17", "D20", "D21", "D22", "R30", "D24", "D25", "D26", "D27", "D28", "D29", "D30", "D31", "D32", "D33", "D34", "D35", "D39", "D40",],
+            'D': ['D01', "D03", "D04", "D05", "D06", "D07", "D08", "D09", "D10", "D11", "D12", "D13", "A15", "A24", "D14", "D15", "D16", "D17", "D20", "D21", "D22", "R30", "R31", "R32", "R33", "R34", "R35", "R36", "B12", "B13", "B14", "B15", "B16", "B17", "B18", "B19", "B20", "B21", "B22", "B23", "D43"],
+            'F': ['F01', 'F02', 'F03', "F04", "F05", "F06", "F07", "G08", "G09", "G10", "G11", "G12", "G13", "G14", "G15", "G16", "G18", "G19", "G20", "B04", "B06", "B08", "B10", "D15", "D16", "D17", "D18", "D19", "D20", "D21", "D22", "F14", "F15", "F16", "F18", "A41", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", "F29", "F30", "F31", "F32", "F33", "F34", "F35", "F36", "F38", 'F39', "D42", "D43",  ],
+            'M': ["", "", "",]
+        },
+        'Crosstown Line': {
+            'G': ["G22", "G24", "G26", "G28", "G29", "G30", "G31", "G32", "G33", "G34", "G35", "G36", "A42", "F20", "F21", "F22", "F23", "F24", "F25", "F26", "F27", ]
+        },
+        'Canarsie Line': {
+            'L': ['L01', 'L02', 'L03']
+        },
+        'Nassau Street Line': {
+            'J': ['J01', 'J02', 'J03'],
+            'Z': ['Z01', 'Z02', 'Z03']
+        },
+        'Broadway Line': {
+            'N': ['N01', 'N02', 'N03'],
+            'Q': ['Q01', 'Q02', 'Q03'],
+            'R': ['R01', 'R02', 'R03'],
+            'W': ['W01', 'W02', 'W03']
+        },
+        'Broadway–Seventh Avenue Line': {
+            '1': ['101', '102', '103'],
+            '2': ['201', '204', '247'],
+            '3': ['301', '302', '303']
+        },
+        'Lexington Avenue Line': {
+            '4': ['401', '402', '403'],
+            '5': ['501', '502', '247'],
+            '6': ['601', '602', '603']
+        },
+        'Flushing Line': {
+            '7': ['701', '702', '703']
+        },
+        'Second Avenue Line': {
+            'T': ['T01', 'T02', 'T03']
+        },
+        '42nd Street Shuttle': {
+            'GS': ['901', '902']
+        },
+        'Franklin Avenue Shuttle': {
+            'FS': ['D26', 'S01', 'S03', 'S04']
+        },
+        'Rockaway Park Shuttle': {
+            'H': ['H01', 'H02', 'H03', 'H04', 'H06', 'H07', 'H08', 'H09', 'H10', 'H11', 'H12', 'H13', 'H14', 'H15']
+        },
+        'Staten Island Railway': {
+            'SIR': ['S09', 'S11', 'S13', 'S14', 'S15', 'S16', 'S17', 'S18', 'S19', 'S20', 'S21', 'S22', 'S23', 'S24', 'S25', 'S26', 'S27', 'S28', 'S29', 'S30', 'S31']
+        }
     }
-    return trunk_line_stops.get(trunk_line, [])
+    return trunk_line_stops.get(trunk_line, {}).get(service, [])
 
 def get_stop_info(stop_id):
     """Get stop name from stops.txt"""
@@ -368,6 +416,19 @@ def service(service):
         'Staten Island Railway': ['SIR']
     }
     
+    trunk_line_colors = {
+        'Eighth Avenue Line': '#0039a6',
+        'Sixth Avenue Line': '#ff6319',
+        'Crosstown Line': '#6cbe45',
+        'Canarsie Line': '#a7a9ac',
+        'Nassau Street Line': '#996633',
+        'Broadway Line': '#fccc0a',
+        'Broadway–Seventh Avenue Line': '#ee352e',
+        'Lexington Avenue Line': '#00933c',
+        'Flushing Line': '#b933ad',
+        'Second Avenue Line': '#00add0'
+    }
+    
     current_trunk = None
     for trunk, services in trunk_lines.items():
         if service in services:
@@ -378,7 +439,7 @@ def service(service):
         return "Invalid line"
         
     # Get stops for special trunk lines (shuttles and SIR)
-    stops = get_stops_for_trunk_line(current_trunk)
+    stops = get_stops_for_trunk_line(current_trunk, service)
     if stops:
         # Get stop names for each stop ID
         stop_info = []
@@ -391,11 +452,11 @@ def service(service):
                              service=service,
                              trunk_line=current_trunk,
                              stops=stop_info,
-                             settings=session.get('settings', DEFAULT_SETTINGS))
+                             trunk_color=trunk_line_colors.get(current_trunk, '#ffffff'))
                              
     # For regular trunk lines, continue with existing logic...
     # Get trunk line mappings
-    stop_to_trunk, trunk_to_stops, trunk_line_colors = map_stops_to_trunk_lines()
+    stop_to_trunk, trunk_to_stops, _ = map_stops_to_trunk_lines()
     
     # Get all stops for this trunk line
     trunk_groups = {}
