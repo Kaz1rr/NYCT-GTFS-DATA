@@ -23,7 +23,7 @@
             margin: 20px auto;
             padding: 20px;
             border: 2px solid {{ settings.text_color }};
-            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }}, 
+            box-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }},
                        inset 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
             border-radius: 10px;
             background-color: rgba(0, 0, 0, 0.8);
@@ -321,7 +321,7 @@
                     From: {{ transfer.from_stop }}
                 </div>
                 <div class="transfer-direction">
-                    <a href="{{ url_for('stop', stop_id=transfer.to_stop_id, route=transfer.to_route) }}" class="transfer-link">
+                    <a href="{{ url_for('train_info', stop_id=transfer.to_stop_id, route=transfer.to_route) }}" class="transfer-link">
                         <img src="{{ url_for('static', filename='images/' + transfer.to_route + '.svg') }}" 
                              alt="To Line {{ transfer.to_route|upper }}" 
                              class="train-image">

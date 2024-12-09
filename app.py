@@ -95,7 +95,7 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
 
         now = time.time()
         upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) 
-                         if int(stop_time["departure"].get("time", 0)) > now][:2]  # Limit to 8 trains per direction
+                         if float(stop_time["departure"].get("time", 0)) > (now - 60)][:5]  # Allow slightly past trains and show more per direction
 
         for stop_time in upcoming_trains:
             departure_time = stop_time.get("departure", {}).get("time", None)
@@ -103,11 +103,8 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
             if departure_time is None:
                 continue
 
-            seconds_to_leave = int(departure_time) - now
+            seconds_to_leave = float(departure_time) - now
             minutes = int(seconds_to_leave / 60)
-            
-            if minutes < -1:  # Skip trains that left more than a minute ago
-                continue
 
             trip_info = stop_time.get("trip", {})
             route_id = trip_info.get("route", {}).get("id", "Unknown")
@@ -116,7 +113,8 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
             headsign = stop_time.get("headsign", "Unknown")
             trip_id = trip_info.get("id", "Unknown")
 
-            if destination == "Unknown":
+            # Only skip if we really have no useful information
+            if destination == "Unknown" and headsign == "Unknown":
                 continue
             if route_name == "Unknown Line":
                 continue
@@ -126,14 +124,14 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
                 seen_trains.add(train_key)
                 train_info = {
                     "route_name": route_name,
-                    "destination": destination,
+                    "destination": destination or headsign,
                     "headsign": headsign,
                     "departure_in_minutes": max(0, minutes)
                 }
                 all_train_info.append(train_info)
     
-    # Sort by departure time and limit to 8 trains total
-    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:4]
+    # Sort by departure time and show more trains
+    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:5]
 
 def get_stop_name(stop_id):
     url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
@@ -147,6 +145,10 @@ def get_stop_name(stop_id):
         return "Unknown Station"
 
 def get_transfers_for_stop(stop_id):
+    # Clean the stop_id by removing any /realtime suffix
+    if '/realtime' in stop_id:
+        stop_id = stop_id.replace('/realtime', '')
+    
     url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
@@ -176,13 +178,21 @@ def get_transfers_for_stop(stop_id):
                 else:
                     to_route = 's'  # 42nd St
             
+            # Clean the stop IDs by removing any /realtime suffix
+            from_stop_id = transfer['fromStop']['id']
+            to_stop_id = transfer['toStop']['id']
+            if '/realtime' in from_stop_id:
+                from_stop_id = from_stop_id.replace('/realtime', '')
+            if '/realtime' in to_stop_id:
+                to_stop_id = to_stop_id.replace('/realtime', '')
+            
             transfer_info = {
                 'from_stop': transfer['fromStop']['name'],
                 'to_stop': transfer['toStop']['name'],
                 'from_route': from_route.lower(),
                 'to_route': to_route.lower(),
-                'from_stop_id': transfer['fromStop']['id'],
-                'to_stop_id': transfer['toStop']['id']
+                'from_stop_id': from_stop_id,
+                'to_stop_id': to_stop_id
             }
             processed_transfers.append(transfer_info)
         return processed_transfers
@@ -203,7 +213,11 @@ def get_route_for_stop(stop_id):
         return "Unknown Route"
 
 def get_headways_for_stop(stop_id):
-    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}/realtime"
+    # Clean the stop_id by removing any /realtime suffix if present
+    if '/realtime' in stop_id:
+        stop_id = stop_id.replace('/realtime', '')
+        
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -441,6 +455,10 @@ def settings():
 
 @app.route('/stop/<stop_id>')
 def stop(stop_id):
+    # Clean the stop_id by removing any /realtime suffix
+    if '/realtime' in stop_id:
+        stop_id = stop_id.replace('/realtime', '')
+        
     url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}"
     try:
         response = requests.get(url)
