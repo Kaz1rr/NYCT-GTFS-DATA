@@ -95,7 +95,7 @@ def get_upcoming_trains_for_stop(stop_id, lines_stations):
 
         now = time.time()
         upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) 
-                         if float(stop_time["departure"].get("time", 0)) > (now - 60)][:4]  # Allow slightly past trains and show more per direction
+                         if float(stop_time["departure"].get("time", 0)) > (now - 0.5)]  # Allow slightly past trains and show more per direction
 
         for stop_time in upcoming_trains:
             departure_time = stop_time.get("departure", {}).get("time", None)
@@ -398,6 +398,31 @@ def get_stop_info(stop_id):
                 }
     return None
 
+def get_train_info(stop_id):
+    """Fetch and display train information for a specific stop."""
+    url = f"{TRANSITER_BASE_URL}/systems/us-ny-subway/stops/{stop_id}/trains"
+    response = requests.get(url)
+    data = response.json()
+    
+    now = time.time()
+    upcoming_trains = [stop_time for stop_time in data.get("stopTimes", []) 
+                       if float(stop_time["departure"].get("time", 0)) > (now - 0.5)]  # Allow slightly past trains
+
+    all_train_info = []
+    for stop_time in upcoming_trains:
+        departure_time = stop_time.get("departure", {}).get("time", None)
+        if departure_time:
+            departure_in_minutes = (departure_time - now) / 60
+            train_info = {
+                "line": stop_time.get("line", {}).get("id", ""),
+                "destination": stop_time.get("destination", {}).get("name", ""),
+                "departure_in_minutes": int(departure_in_minutes)
+            }
+            all_train_info.append(train_info)
+    
+    # Sort by departure time and show all trains
+    return sorted(all_train_info, key=lambda x: x["departure_in_minutes"])[:4]
+
 @app.route('/')
 def index():
     valid_lines = ['1', '2', '3', '4', '5', '6', '7', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'J', 'L', 'M', 'N', 'Q', 'R', 'S', 'T', "H", "W", "9", "FS", "GS", "SIR"]
@@ -544,7 +569,7 @@ def get_train_info():
     stop_id = request.args.get('stop_id')
     lines_stations = parse_stops(r"stops.txt")
     
-    train_info = get_upcoming_trains_for_stop(stop_id, lines_stations)
+    train_info = get_train_info(stop_id)
     stop_name = get_stop_name(stop_id)
     transfers = get_transfers_for_stop(stop_id)
 
@@ -587,7 +612,7 @@ def stop(stop_id):
         lines_stations = parse_stops(r"stops.txt")
         
         # Get upcoming trains
-        train_info = get_upcoming_trains_for_stop(stop_id, lines_stations)
+        train_info = get_train_info(stop_id)
         
         # Calculate arrival times
         current_time = time.time()
@@ -599,7 +624,7 @@ def stop(stop_id):
                 info['arrival_time'] = None
             
             # Extract just the route ID (number or letter)
-            info['route_id'] = info['route_name'].split()[0]
+            info['route_id'] = info['line'].split()[0]
 
         # Sort by arrival time
         train_info.sort(key=lambda x: x['arrival_time'] if x['arrival_time'] is not None else float('inf'))
