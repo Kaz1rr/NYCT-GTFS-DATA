@@ -163,7 +163,8 @@
                             <div class="train-info {% if train.departure_in_minutes == 0 %}blinking{% endif %}">
                                 <img src="{{ url_for('static', filename='images/' + train.route_name|lower + '.svg') }}" 
                                      alt="{{ train.route_name }}" 
-                                     class="train-bullet">
+                                     class="train-bullet"
+                                     style="cache-control: max-age=604800;">
                                 <div class="train-details">
                                     <div class="train-destination">
                                         to {{ train.destination }}
