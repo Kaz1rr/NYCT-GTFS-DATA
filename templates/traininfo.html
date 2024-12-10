@@ -11,7 +11,7 @@
             font-family: '{{ font_link }}', sans-serif;
             font-size: {{ font_size }}px;
             background-color: #000000;
-            color: #00ffff;
+            color: {{ text_color }};
             padding: 20px;
             margin: 0;
             min-height: 100vh;
@@ -21,16 +21,16 @@
             max-width: 800px;
             margin: 20px auto;
             padding: 30px;
-            border: 2px solid #00ffff;
+            border: 2px solid {{ text_color }};
             border-radius: 10px;
             background-color: rgba(0, 0, 0, 0.9);
-            box-shadow: 0 0 20px #00ffff;
+            box-shadow: 0 0 20px {{ text_color }};
         }
 
         .train-info {
             margin-bottom: 15px;
             padding: 15px;
-            border: 1px solid #00ffff;
+            border: 1px solid {{ text_color }};
             border-radius: 5px;
             display: flex;
             align-items: center;
@@ -46,7 +46,7 @@
 
         @keyframes blink {
             0% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
-            50% { box-shadow: 0 0 30px #00ffff; }
+            50% { box-shadow: 0 0 30px {{ text_color }}; }
             100% { box-shadow: 0 0 10px rgba(0, 255, 255, 0.2); }
         }
 
@@ -64,11 +64,11 @@
         }
 
         .train-destination {
-            color: #00ffff;
+            color: {{ text_color }};
         }
 
         .arrival-time {
-            color: #00ffff;
+            color: {{ text_color }};
             text-align: right;
             min-width: 80px;
         }
@@ -86,25 +86,25 @@
         h1 {
             text-align: center;
             margin-bottom: 30px;
-            color: #00ffff;
-            text-shadow: 0 0 10px #00ffff;
+            color: {{ text_color }};
+            text-shadow: 0 0 10px {{ text_color }};
             font-size: 18px;
         }
 
         h2 {
-            color: #00ffff;
+            color: {{ text_color }};
             font-size: 16px;
             margin: 25px 0 15px 0;
-            text-shadow: 0 0 10px #00ffff;
+            text-shadow: 0 0 10px {{ text_color }};
         }
 
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
-            color: #00ffff;
+            color: {{ text_color }};
             text-decoration: none;
             font-size: 24px;
-            text-shadow: 0 0 10px #00ffff;
+            text-shadow: 0 0 10px {{ text_color }};
         }
 
         .settings-link {
@@ -113,21 +113,21 @@
             right: 20px;
             width: 40px;
             height: 40px;
-            color: #00ffff;
+            color: {{ text_color }};
         }
 
         .settings-icon {
             width: 100%;
             height: 100%;
-            fill: #00ffff;
-            filter: drop-shadow(0 0 5px #00ffff);
+            fill: {{ text_color }};
+            filter: drop-shadow(0 0 5px {{ text_color }});
         }
 
         .no-trains {
             text-align: center;
             padding: 20px;
-            color: #00ffff;
-            text-shadow: 0 0 10px #00ffff;
+            color: {{ text_color }};
+            text-shadow: 0 0 10px {{ text_color }};
         }
 
         .direction-section {

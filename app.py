@@ -356,7 +356,7 @@ def get_stops_for_trunk_line(trunk_line, service):
             'W': ['W01', 'W02', 'W03']
         },
         'Broadway–Seventh Avenue Line': {
-            '1': ['101', '102', '103'],
+            '1': ['101', '127', '103'],
             '2': ['201', '204', '247'],
             '3': ['301', '302', '303']
         },
