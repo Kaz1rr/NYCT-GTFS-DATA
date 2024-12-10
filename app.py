@@ -519,7 +519,7 @@ def service(service):
     settings = session.get('settings', DEFAULT_SETTINGS)
     
     return render_template('service.html', 
-                         line=service,
+                         trunk_line=current_trunk,
                          trunk_groups=trunk_groups,
                          trunk_line_colors=trunk_line_colors,
                          settings=settings,

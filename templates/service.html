@@ -108,11 +108,12 @@
     </style>
 </head>
 <body>
-    <h1>Line {{ line }} Stops</h1>
-    
     <a href="{{ url_for('index') }}" class="back-link">← Back to All Services</a>
 
     <div class="station-list">
+        {% if trunk_line %}
+        <h1 style="text-align: left;">{{ trunk_line }}</h1>
+        {% endif %}
         {% if stops %}
             {% for stop in stops %}
             <a href="{{ url_for('train_info', stop_id=stop.stop_id) }}" class="station-row">
@@ -127,7 +128,6 @@
         {% elif trunk_groups %}
             {% for trunk, stops in trunk_groups.items() %}
             <div class="trunk-line">
-                <h3>{{ trunk }}</h3>
                 {% for stop in stops %}
                 <a href="{{ url_for('train_info', stop_id=stop.stop_id) }}" class="station-row">
                     <div class="station-info">
