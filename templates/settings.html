@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings</title>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link href="{{ font_link }}" rel="stylesheet">
     <style>
         body {
-            font-family: 'Press Start 2P', monospace;
+            font-family: '{{ font_link }}', sans-serif;
             background-color: #000000;
             color: {{ settings.text_color }};
             padding: 20px;
-            letter-spacing: 1px;
+            margin: 0;
+            min-height: 100vh;
         }
 
         h1 {
@@ -79,7 +79,7 @@
             background: none;
             border: 2px solid {{ settings.text_color }};
             color: {{ settings.text_color }};
-            font-family: 'Press Start 2P', monospace;
+            font-family: '{{ font_link }}', sans-serif;
             font-size: 16px;
             cursor: pointer;
             text-decoration: none;
@@ -126,34 +126,81 @@
             margin-top: 10px;
             text-shadow: 0 0 {{ settings.glow_strength }}px {{ settings.text_color }};
         }
+
+        .settings-box {
+            margin: 0 auto;
+            padding: 20px;
+            border: 2px solid #00ffff;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 20px #00ffff;
+            max-width: 400px;
+        }
+
+        .settings-box label {
+            color: #00ffff;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .settings-box input[type="color"],
+        .settings-box input[type="text"] {
+            width: 100%;
+            padding: 5px;
+            margin-top: 5px;
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            background-color: #000;
+            color: #00ffff;
+        }
+
+        .settings-box input[type="range"] {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .settings-box button {
+            background: none;
+            border: 2px solid #00ffff;
+            color: #00ffff;
+            padding: 10px 20px;
+            cursor: pointer;
+            text-decoration: none;
+            font-family: 'Jersey 25 Charted', sans-serif;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+
+        .preview-text {
+            color: #00ffff;
+            margin-top: 10px;
+            text-shadow: 0 0 10px #00ffff;
+        }
     </style>
 </head>
 <body>
     <h1>Settings</h1>
 
-    <div class="settings-container">
-        <form method="POST">
-            <div class="setting-group">
-                <label for="text_color">Border & Text Color:</label>
-                <input type="color" id="text_color" name="text_color" value="{{ settings.text_color }}">
-            </div>
+    <div class="settings-box">
+        <form method="post" action="/update_settings">
+            <label for="text_color">Border & Text Color:</label>
+            <input type="color" id="text_color" name="text_color" value="{{ settings.text_color }}">
 
-            <div class="setting-group">
-                <label for="glow_strength">Glow Strength:</label>
-                <input type="range" id="glow_strength" name="glow_strength" 
-                       min="0" max="30" value="{{ settings.glow_strength }}"
-                       oninput="updateGlowValue(this.value)">
-                <div id="glow-value">{{ settings.glow_strength }}px</div>
-            </div>
+            <label for="glow_strength">Glow Strength:</label>
+            <input type="range" id="glow_strength" name="glow_strength" min="0" max="50" value="{{ settings.glow_strength }}" oninput="updateGlowValue(this.value)">
+            <span id="glow-value">{{ settings.glow_strength }}px</span>
 
-            <div class="preview">
-                Preview Text
-            </div>
+            <label for="font-link">Google Font Link:</label>
+            <input type="text" id="font-link" name="font_link" placeholder="https://fonts.google.com/share?selection.family=..." value="{{ settings.font_link }}">
 
-            <div class="buttons">
-                <button type="submit" class="button">Save Settings</button>
-                <a href="{{ url_for('index') }}" class="button">Cancel</a>
-            </div>
+            <label for="font-size">Adjust Font Size (px):</label>
+            <input type="range" id="font-size" name="font_size" min="10" max="30" value="{{ settings.font_size }}" oninput="updateFontSizeValue(this.value)">
+            <span id="font-size-value">{{ settings.font_size }}px</span>
+
+            <div class="preview-text" style="font-size: {{ settings.font_size }}px;">Preview Text</div>
+
+            <button type="submit">Save Settings</button>
+            <button type="button" onclick="window.location.href='{{ url_for('index') }}'">Cancel</button>
         </form>
     </div>
 
@@ -162,7 +209,7 @@
             document.getElementById('glow-value').textContent = value + 'px';
             
             // Update preview
-            const preview = document.querySelector('.preview');
+            const preview = document.querySelector('.preview-text');
             const textColor = document.getElementById('text_color').value;
             const glowEffect = `0 0 ${value}px ${textColor}`;
             const boxShadow = `${glowEffect}, inset ${glowEffect}`;
@@ -184,8 +231,8 @@
             document.querySelector('#glow-value').style.textShadow = glowEffect;
             
             // Update containers
-            document.querySelector('.settings-container').style.borderColor = textColor;
-            document.querySelector('.settings-container').style.boxShadow = boxShadow;
+            document.querySelector('.settings-box').style.borderColor = textColor;
+            document.querySelector('.settings-box').style.boxShadow = boxShadow;
             
             preview.style.borderColor = textColor;
             preview.style.color = textColor;
@@ -196,6 +243,11 @@
             const rangeInput = document.querySelector('input[type="range"]');
             rangeInput.style.borderColor = textColor;
             rangeInput.style.setProperty('--thumb-color', textColor);
+        }
+
+        function updateFontSizeValue(value) {
+            document.getElementById('font-size-value').textContent = value + 'px';
+            document.querySelector('.preview-text').style.fontSize = value + 'px';
         }
 
         // Add event listener for color changes

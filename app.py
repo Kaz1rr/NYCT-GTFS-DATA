@@ -16,7 +16,9 @@ Session(app)
 # Default settings
 DEFAULT_SETTINGS = {
     'text_color': '#00ffff',
-    'glow_strength': '15'
+    'glow_strength': '15',
+    'font_link': 'https://fonts.googleapis.com/css2?family=Jersey+25+Charted&display=swap',
+    'font_size': '16'
 }
 
 TRANSITER_BASE_URL = "https://demo.transiter.dev"
@@ -523,7 +525,9 @@ def train_info(stop_id):
     # Get the user's settings or use defaults
     settings = session.get('settings', {
         'text_color': '#39FF14',
-        'glow_strength': '10'
+        'glow_strength': '10',
+        'font_link': 'https://fonts.googleapis.com/css2?family=Jersey+25+Charted&display=swap',
+        'font_size': '16'
     })
 
     return render_template('traininfo.html', 
@@ -585,7 +589,9 @@ def settings():
         # Update settings
         new_settings = {
             'text_color': request.form.get('text_color', DEFAULT_SETTINGS['text_color']),
-            'glow_strength': request.form.get('glow_strength', DEFAULT_SETTINGS['glow_strength'])
+            'glow_strength': request.form.get('glow_strength', DEFAULT_SETTINGS['glow_strength']),
+            'font_link': request.form.get('font_link', DEFAULT_SETTINGS['font_link']),
+            'font_size': request.form.get('font_size', DEFAULT_SETTINGS['font_size'])
         }
         session['settings'] = new_settings
         return redirect(url_for('index'))
@@ -644,13 +650,44 @@ def stop(stop_id):
         print(f"Error fetching stop info for {stop_id}: {e}")
         return "Station not found", 404
 
+@app.route('/update_font', methods=['POST'])
+def update_font():
+    font_link = request.form.get('font_link', '')
+    session['settings']['font_link'] = font_link
+    return redirect(url_for('settings'))
+
+@app.route('/update_font_size', methods=['POST'])
+def update_font_size():
+    font_size = request.form.get('font_size', '16')
+    session['settings']['font_size'] = font_size
+    return redirect(url_for('settings'))
+
+@app.route('/update_settings', methods=['POST'])
+def update_settings():
+    text_color = request.form.get('text_color', DEFAULT_SETTINGS['text_color'])
+    glow_strength = request.form.get('glow_strength', DEFAULT_SETTINGS['glow_strength'])
+    font_link = request.form.get('font_link', DEFAULT_SETTINGS['font_link'])
+    font_size = request.form.get('font_size', DEFAULT_SETTINGS['font_size'])
+
+    session['settings'] = {
+        'text_color': text_color,
+        'glow_strength': glow_strength,
+        'font_link': font_link,
+        'font_size': font_size
+    }
+    return redirect(url_for('index'))
+
 @app.context_processor
 def inject_settings():
-    # Make settings available to all templates
+    # Make sure 'font_link' and 'font_size' are set in the session
     settings = session.get('settings', DEFAULT_SETTINGS)
+    settings.setdefault('font_link', DEFAULT_SETTINGS['font_link'])
+    settings.setdefault('font_size', DEFAULT_SETTINGS['font_size'])
     return {
         'text_color': settings['text_color'],
-        'glow_strength': settings['glow_strength']
+        'glow_strength': settings['glow_strength'],
+        'font_link': settings['font_link'],
+        'font_size': settings['font_size']
     }
 
 if __name__ == '__main__':
